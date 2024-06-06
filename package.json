@@ -1,0 +1,20 @@
+{
+  "name": "aufgaben",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "swagger": "node ./Block-5/rest_api.js",
+    "start": "node ./LB-B/swagger.js"
+  },
+  "private": true,
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-basic-auth": "^1.2.1",
+    "express-session": "^1.18.0",
+    "moment-timezone": "^0.5.45",
+    "swagger-autogen": "^2.23.7",
+    "swagger-ui-express": "^5.0.0"
+  }
+}
