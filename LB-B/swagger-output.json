@@ -29,8 +29,11 @@
           "200": {
             "description": "List of all Tasks",
             "schema": {
-              "$ref": "#/definitions/task"
+              "$ref": "#/definitions/listOfTasks"
             }
+          },
+          "403": {
+            "description": "Forbidden"
           }
         }
       },
@@ -52,20 +55,23 @@
           }
         ],
         "responses": {
-          "200": {
+          "201": {
+            "description": "Added task",
             "schema": {
               "$ref": "#/definitions/task"
-            },
-            "description": "Added task"
-          },
-          "201": {
-            "description": "Created"
+            }
           },
           "400": {
             "description": "Bad Request"
           },
+          "403": {
+            "description": "Forbidden"
+          },
           "409": {
             "description": "Task already exists"
+          },
+          "422": {
+            "description": "Unprocessable Content"
           }
         }
       }
@@ -95,6 +101,9 @@
             "schema": {
               "$ref": "#/definitions/task"
             }
+          },
+          "403": {
+            "description": "Forbidden"
           },
           "404": {
             "description": "Invalid request parameter"
@@ -135,8 +144,14 @@
               "$ref": "#/definitions/task"
             }
           },
+          "403": {
+            "description": "Forbidden"
+          },
           "404": {
             "description": "Bad request"
+          },
+          "422": {
+            "description": "Unprocessable Content"
           }
         }
       },
@@ -165,8 +180,76 @@
               "$ref": "#/definitions/task"
             }
           },
+          "403": {
+            "description": "Forbidden"
+          },
           "404": {
             "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/login": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Login with e-mail & password",
+        "description": "",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "credentials",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/credentials"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "schema": {
+              "$ref": "#/definitions/message"
+            }
+          },
+          "404": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/verify": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Verify authentication",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "Authentication status ",
+            "schema": {
+              "$ref": "#/definitions/message"
+            }
+          }
+        }
+      }
+    },
+    "/logout": {
+      "delete": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Login with e-mail & password",
+        "description": "",
+        "responses": {
+          "204": {
+            "description": "Logout successful",
+            "schema": {
+              "$ref": "#/definitions/message"
+            }
           }
         }
       }
@@ -202,6 +285,12 @@
         }
       }
     },
+    "listOfTasks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/task"
+      }
+    },
     "taskWithoutId": {
       "type": "object",
       "properties": {
@@ -222,6 +311,23 @@
           "example": "07-06-2024"
         }
       }
+    },
+    "credentials": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "example": "someone@gmail.com"
+        },
+        "password": {
+          "type": "string",
+          "example": "superSecretPassword"
+        }
+      }
+    },
+    "message": {
+      "type": "string",
+      "example": "response message"
     }
   }
 }

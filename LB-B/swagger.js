@@ -20,16 +20,26 @@ const doc = {
             done: "06-06-2024",
             due_date: "07-06-2024"
         },
+        listOfTasks: [
+            {$ref: '#/definitions/task'}
+        ],
         taskWithoutId: {
             title: "Title of Task",
             description: "Some Description",
             done: "06-06-2024",
             due_date: "07-06-2024"
-        }
+        },
+        credentials: {
+            email: "someone@gmail.com",
+            password: "superSecretPassword"
+        },
+        message: "response message"
     }
 }
 
 const outputFile = './swagger-output.json';
-const routes = ['./tasks-api.js'];
+const routes = ['./controller.js'];
 
-swaggerAutogen(outputFile, routes, doc).then(()=>{require("./tasks-api.js")});
+swaggerAutogen(outputFile, routes, doc).then(() => {
+    require("./controller.js")
+});

@@ -3,6 +3,14 @@ const app = express();
 const port = 3000;
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger-output.json');
+const session = require("express-session");
+
+app.use(session({
+    secret: 'secret',
+    resave: false,
+    saveUninitialized: true
+}));
+
 const fs = require('fs').promises;
 let tasks = [
     {
@@ -715,19 +723,31 @@ app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
 });
 
-app.get('/tasks', (req, res) => {
+const checkSession = (req, res) => {
+    if(!req.session.authorized) {
+        res.status(403).send({message: 'Not authenticatedd'});
+    }
+}
+
+app.get('/tasks',checkSession, (req, res) => {
     /*
     #swagger.summary = 'Retrieves all tasks'
     #swagger.tags = ['Tasks']
     #swagger.responses[200] = {
-        schema: { $ref: "#/definitions/task" },
+        schema: { $ref: "#/definitions/listOfTasks" },
         description: 'List of all Tasks'
     }
     */
     res.send(tasks);
 });
 
-app.post('/tasks', (req, res) => {
+function hasTaskTitle(title, res) {
+    if (!title) {
+        res.status(422).send({message: 'Title is required'});
+    }
+}
+
+app.post('/tasks',checkSession, (req, res) => {
     /*
     #swagger.summary = 'Add new Task'
     #swagger.tags = ['Tasks']
@@ -739,7 +759,7 @@ app.post('/tasks', (req, res) => {
             $ref: "#/definitions/taskWithoutId"
         }
     }
-    #swagger.responses[200] = {
+    #swagger.responses[201] = {
         schema: {
             $ref: "#/definitions/task"
         },
@@ -750,6 +770,9 @@ app.post('/tasks', (req, res) => {
     }
     #swagger.responses[409] = {
         description: 'Task already exists'
+    }
+        #swagger.responses[422] = {
+        description: 'Unprocessable Content'
     }
 
     */
@@ -762,8 +785,9 @@ app.post('/tasks', (req, res) => {
             res.sendStatus(409);
         }
     }
+    hasTaskTitle(newTask.title, res);
     tasks.push({
-        id: idIncrement+=1,
+        id: idIncrement += 1,
         title: newTask.title,
         description: newTask.description,
         done: newTask.done,
@@ -771,7 +795,7 @@ app.post('/tasks', (req, res) => {
     });
     res.status(201).send(tasks[tasks.length - 1]);
 });
-app.get('/tasks/:id', (req, res) => {
+app.get('/tasks/:id',checkSession, (req, res) => {
     /*
     #swagger.summary = 'Retrive Book with ISBN number'
     #swagger.tags = ['Tasks']
@@ -801,7 +825,7 @@ app.get('/tasks/:id', (req, res) => {
     }
 });
 
-app.put('/tasks/:id', (req, res) => {
+app.put('/tasks/:id',checkSession, (req, res) => {
     /*
     #swagger.summary = 'Overwrite task with id'
     #swagger.tags = ['Tasks']
@@ -828,10 +852,14 @@ app.put('/tasks/:id', (req, res) => {
         #swagger.responses[404] = {
         description: 'Bad request'
     }
+            #swagger.responses[422] = {
+        description: 'Unprocessable Content'
+    }
     */
     const id = +req.params.id
     const taskToOverwrite = tasks.findIndex(task => task.id === id);
     if (id && taskToOverwrite >= 0) {
+        hasTaskTitle(req.body.title, res)
         tasks[taskToOverwrite] = {
             id: id,
             title: req.body.title,
@@ -845,7 +873,7 @@ app.put('/tasks/:id', (req, res) => {
     }
 });
 
-app.delete('/tasks/:id', (req, res) => {
+app.delete('/tasks/:id',checkSession, (req, res) => {
     /*
     #swagger.summary = 'Delete task with id number'
     #swagger.tags = ['Tasks']
@@ -862,7 +890,6 @@ app.delete('/tasks/:id', (req, res) => {
         description: 'Task successfully deleted'
     }
     */
-
     const id = +req.params.id
     const taskToDelete = tasks.findIndex(task => task.id === id);
     if (id && taskToDelete >= 0) {
@@ -875,4 +902,74 @@ app.delete('/tasks/:id', (req, res) => {
 })
 
 
+// copied from github
+const validateEmail = (email) => {
+    return String(email)
+        .toLowerCase()
+        .match(
+            /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+        );
+};
+
+app.post('/login',  (req, res) => {
+    /*
+#swagger.summary = 'Login with e-mail & password'
+#swagger.tags = ['Authentication']
+#swagger.parameters['body'] {
+    in: 'body',
+    description: 'credentials',
+    required: true,
+    schema: {$ref: "#/definitions/credentials"}
+}
+#swagger.responses[200] = {
+    schema: {
+        $ref: "#/definitions/message"
+    },
+    description: 'Login successful'
+}
+#swagger.responses[404] = {
+    description: 'Bad Request'
+}
+*/
+    if (validateEmail(req.body.email.toString()) && req.body.password.toString() === "m295") {
+        req.session.email = req.body.email;
+        req.session.authorized = true
+        res.send({message: "Login successful"});
+    } else {
+        res.sendStatus(404);
+    }
+});
+
+app.get('/verify', (req, res) => {
+    /*
+#swagger.summary = 'Verify authentication'
+#swagger.tags = ['Authentication']
+#swagger.responses[200] = {
+schema: {
+    $ref: "#/definitions/message"
+},
+description: 'Authentication status '
+}
+*/
+    res.send({message: `Verification ${req.session.authorized}`});
+})
+
+app.delete('/logout', (req, res) => {
+    /*
+#swagger.summary = 'Login with e-mail & password'
+#swagger.tags = ['Authentication']
+#swagger.responses[204] = {
+schema: {
+    $ref: "#/definitions/message"
+},
+description: 'Logout successful'
+}
+*/
+    req.session.destroy();
+    res.sendStatus(204);
+})
+
+app.use((req, res) => {
+    res.status(404).send({message: 'No endpoint'});
+})
 
